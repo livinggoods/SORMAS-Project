@@ -27,6 +27,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import com.vaadin.server.UserError;
+import com.vaadin.v7.data.validator.DateRangeValidator;
+import com.vaadin.v7.shared.ui.datefield.Resolution;
 import com.vaadin.v7.ui.DateField;
 import com.vaadin.v7.ui.OptionGroup;
 import com.vaadin.v7.ui.TextField;
@@ -57,6 +59,10 @@ public class HospitalizationForm extends AbstractEditForm<HospitalizationDto> {
 	private static final String HEALTH_FACILITY = Captions.CaseHospitalization_healthFacility;	
 	private final CaseDataDto caze;
 	private final ViewMode viewMode;
+
+	private OptionGroup intensiveCareUnit;
+	private DateField intensiveCareUnitStart;
+	private DateField intensiveCareUnitEnd;
 
 	private static final String HTML_LAYOUT = 
 			h3(I18nProperties.getString(Strings.headingHospitalization)) +
@@ -93,8 +99,15 @@ public class HospitalizationForm extends AbstractEditForm<HospitalizationDto> {
 		addField(HospitalizationDto.ADMITTED_TO_HEALTH_FACILITY, OptionGroup.class);
 		DateField admissionDateField = addField(HospitalizationDto.ADMISSION_DATE, DateField.class);
 		DateField dischargeDateField = addDateField(HospitalizationDto.DISCHARGE_DATE, DateField.class, 7);
-		addField(HospitalizationDto.INTENSIVE_CARE_UNIT, OptionGroup.class);
-		addFields(HospitalizationDto.INTENSIVE_CARE_UNIT_START, HospitalizationDto.INTENSIVE_CARE_UNIT_END);
+		intensiveCareUnit = addField(HospitalizationDto.INTENSIVE_CARE_UNIT, OptionGroup.class);
+		intensiveCareUnit.addValueChangeListener(e -> setDateFieldVisibilties());
+		intensiveCareUnitStart = addField(HospitalizationDto.INTENSIVE_CARE_UNIT_START, DateField.class);
+		intensiveCareUnitStart.setVisible(false);
+		intensiveCareUnitEnd = addField(HospitalizationDto.INTENSIVE_CARE_UNIT_END, DateField.class);
+		intensiveCareUnitEnd.setVisible(false);
+		intensiveCareUnitStart.addValidator(
+				new DateRangeValidator(I18nProperties.getValidationError(Validations.intensiveCareUnitStart),
+						admissionDateField.getValue(), intensiveCareUnitEnd.getValue(), Resolution.DAY));
 		addField(HospitalizationDto.ISOLATION_DATE);
 		addField(HospitalizationDto.ISOLATED, OptionGroup.class);
 		addField(HospitalizationDto.LEFT_AGAINST_ADVICE, OptionGroup.class);
@@ -126,6 +139,12 @@ public class HospitalizationForm extends AbstractEditForm<HospitalizationDto> {
 		previousHospitalizationsField.addValueChangeListener(e -> {
 			updatePrevHospHint(hospitalizedPreviouslyField, previousHospitalizationsField);
 		});
+	}
+
+	private void setDateFieldVisibilties() {
+		boolean visible = YesNoUnknown.YES.equals(intensiveCareUnit.getValue());
+		intensiveCareUnitStart.setVisible(visible);
+		intensiveCareUnitEnd.setVisible(visible);
 	}
 
 	private void updatePrevHospHint(OptionGroup hospitalizedPreviouslyField, PreviousHospitalizationsField previousHospitalizationsField) {
